@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
-use std::fs::File;
-use std::path::Path;
+use std::fs::{self, File};
+use std::path::{Path, PathBuf};
 use colored::*;
 
 static CONFIG_FILE_PATH: &str = "config.yml";
@@ -38,4 +38,47 @@ pub fn get_config() -> Config {
             }
         }
     }
+}
+
+pub enum PathType {
+    FILE,
+    DIR,
+    NEITHER,
+    ERROR
+}
+
+pub fn is_file_or_dir(p: &str) -> PathType {
+    match fs::metadata(p) {
+        Ok(metadata) => {
+            if metadata.is_dir() {
+                PathType::DIR
+            } else if metadata.is_file() {
+                PathType::FILE
+            } else {
+                PathType::NEITHER
+            }
+        }
+        Err(e) => {
+            eprintln!("{}", e);
+            PathType::ERROR
+        }
+    }
+}
+
+pub fn read_dir_files(dir_path: &str) -> Vec<PathBuf> {
+    let mut list = vec![];
+
+    if let Ok(entries) = fs::read_dir(dir_path) {
+        for entry in entries {
+            if let Ok(entry) = entry {
+                let path = entry.path();
+                if path.is_file() {
+                    list.push(path)
+                }
+            }
+        }
+    } else {
+        eprintln!("Error reading directory.");
+    }
+    list
 }
